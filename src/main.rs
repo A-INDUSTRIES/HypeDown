@@ -39,7 +39,7 @@ impl App {
         let mut buttons = vec![];
         for message in Message::iter() {
             buttons.push(Element::new(
-                button(text(message.to_string()))
+                button(text(message.to_string()).size(Pixels::from(50)))
                     .on_press(message)
                     .style(|_, status| Style {
                         background: match status {
@@ -112,7 +112,7 @@ fn main() -> Result<(), iced::Error> {
                 ..Default::default()
             },
             default_font: Font::with_name("Hack Nerd Font"),
-            default_text_size: Pixels::from(50),
+            default_text_size: Pixels::from(12),
             ..Default::default()
         })
         .theme(|_| Theme::CatppuccinMacchiato)
