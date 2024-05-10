@@ -1,3 +1,6 @@
+use std::process::exit;
+
+use iced::alignment::Horizontal;
 use iced::border::Radius;
 use iced::widget::button::{Status, Style};
 use iced::widget::{button, column, container, row, text, Container, Row};
@@ -13,30 +16,41 @@ use iced::Renderer;
 use iced::Shadow;
 use iced::Size;
 use iced::Theme;
-use strum::{Display, EnumIter, IntoEnumIterator};
+use strum::{Display, EnumIter, EnumMessage, IntoEnumIterator};
 
-#[derive(Default)]
 struct App {
     show_confirm: bool,
-    confirmed: bool,
     after_confirm: Message,
+    font_size: u8,
+    button_size: (u8, u8),
 }
 
-#[derive(Debug, EnumIter, Clone, Display, Default)]
+#[derive(Debug, EnumIter, Clone, Display, Default, Copy, EnumMessage)]
 enum Message {
-    #[strum(to_string = "")]
+    #[strum(to_string = "", message = "shutdown")]
     #[default]
     Shutdown,
-    #[strum(to_string = "")]
+    #[strum(to_string = "", message = "reboot")]
     Reboot,
-    #[strum(to_string = "󱤛")]
+    #[strum(to_string = "󱤛", message = "log out")]
     LogOut,
-    #[strum(to_string = "󱅞")]
+    #[strum(to_string = "󱅞", message = "lock session")]
     Lock,
     #[strum(to_string = "")]
     Confirm,
     #[strum(to_string = "")]
     Cancel,
+}
+
+impl Default for App {
+    fn default() -> Self {
+        Self {
+            show_confirm: false,
+            after_confirm: Message::Shutdown,
+            font_size: 50,
+            button_size: (66, 75),
+        }
+    }
 }
 
 impl App {
@@ -45,7 +59,7 @@ impl App {
         for message in Message::iter() {
             if message.to_string().as_str() != "" {
                 buttons.push(Element::new(
-                    button(text(message.to_string()).size(Pixels::from(50)))
+                    button(text(message.to_string()).size(Pixels::from(self.font_size as u16)))
                         .on_press(message)
                         .style(|_, status| Style {
                             background: match status {
@@ -68,15 +82,50 @@ impl App {
                                 ..Default::default()
                             },
                         })
-                        .width(Length::from(66))
-                        .height(Length::from(75)),
+                        .width(Length::from(self.button_size.0 as u16))
+                        .height(Length::from(self.button_size.1 as u16)),
                 ));
             }
         }
-        let confirm: Container<Message, Theme, Renderer> = container(column![
-            text("Are you sure?"),
-            row![button("Yes"), button("Cancel")]
-        ])
+        let confirm: Container<Message, Theme, Renderer> = container(
+            column![
+                text(format!(
+                    "Are you sure you want to {}?",
+                    self.after_confirm.get_message().unwrap()
+                ))
+                .horizontal_alignment(Horizontal::Center),
+                row![
+                    button("Yes, do it!")
+                        .on_press(Message::Confirm)
+                        .style(|_, _| Style {
+                            background: Some(Background::from(Color::from_rgb8(166, 218, 149))),
+                            text_color: Color::from_rgb8(24, 25, 38),
+                            border: Border {
+                                radius: Radius::from(10),
+                                ..Default::default()
+                            },
+                            ..Default::default()
+                        }),
+                    button("God please no.")
+                        .on_press(Message::Cancel)
+                        .style(|_, _| Style {
+                            background: Some(Background::from(Color::from_rgb8(245, 169, 127))),
+                            text_color: Color::from_rgb8(24, 25, 38),
+                            border: Border {
+                                radius: Radius::from(10),
+                                ..Default::default()
+                            },
+                            ..Default::default()
+                        }),
+                ]
+                .spacing(5)
+                .align_items(Alignment::Center)
+            ]
+            .spacing(4)
+            .width(Length::Fill)
+            .align_items(Alignment::Center),
+        )
+        .width(Length::Fill)
         .center();
         let line = Row::from_vec(buttons)
             .align_items(Alignment::Center)
@@ -95,19 +144,30 @@ impl App {
     }
 
     fn update(&mut self, message: Message) {
-        self.show_confirm = !self.show_confirm;
-        self.after_confirm = message.clone();
         match message {
-            Message::Shutdown => {}
-            Message::Reboot => {}
-            Message::LogOut => {}
-            Message::Lock => {}
-            Message::Confirm => {
-                self.confirmed = true;
-            }
+            Message::Confirm => match self.after_confirm {
+                Message::Shutdown => {
+                    println!("Shut");
+                }
+                Message::Reboot => {
+                    println!("Reb");
+                }
+                Message::LogOut => {
+                    println!("Logou");
+                }
+                Message::Lock => {
+                    println!("lock");
+                }
+                _ => {}
+            },
             Message::Cancel => {
-                self.show_confirm = false;
-                self.confirmed = false;
+                exit(0);
+            }
+            _ => {
+                self.font_size = 24;
+                self.button_size = (42, 42);
+                self.show_confirm = true;
+                self.after_confirm = message;
             }
         }
     }
