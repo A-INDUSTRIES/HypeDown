@@ -1,28 +1,20 @@
 use std::process::exit;
+use std::process::Command;
 
 use iced::alignment::Horizontal;
 use iced::border::Radius;
 use iced::widget::button::{Status, Style};
 use iced::widget::{button, column, container, row, text, Container, Row};
-use iced::Alignment;
-use iced::Background;
-use iced::Border;
-use iced::Color;
-use iced::Element;
-use iced::Font;
-use iced::Length;
-use iced::Pixels;
-use iced::Renderer;
-use iced::Shadow;
-use iced::Size;
-use iced::Theme;
+use iced::{
+    Alignment, Background, Border, Color, Element, Font, Length, Pixels, Renderer, Shadow, Size,
+    Theme,
+};
 use strum::{Display, EnumIter, EnumMessage, IntoEnumIterator};
 
 struct App {
     show_confirm: bool,
     after_confirm: Message,
     font_size: u8,
-    button_size: (u8, u8),
 }
 
 #[derive(Debug, EnumIter, Clone, Display, Default, Copy, EnumMessage)]
@@ -47,8 +39,7 @@ impl Default for App {
         Self {
             show_confirm: false,
             after_confirm: Message::Shutdown,
-            font_size: 50,
-            button_size: (66, 75),
+            font_size: 55,
         }
     }
 }
@@ -75,15 +66,13 @@ impl App {
                             border: Border {
                                 color: Color::TRANSPARENT,
                                 width: 0.1,
-                                radius: Radius::from(200),
+                                radius: Radius::from(20),
                             },
                             shadow: Shadow {
                                 color: Color::TRANSPARENT,
                                 ..Default::default()
                             },
-                        })
-                        .width(Length::from(self.button_size.0 as u16))
-                        .height(Length::from(self.button_size.1 as u16)),
+                        }),
                 ));
             }
         }
@@ -138,7 +127,7 @@ impl App {
         } else {
             container(line)
                 .width(Length::Fill)
-                .height(Length::Fill)
+                .height(Length::Shrink)
                 .center()
         }
     }
@@ -147,16 +136,23 @@ impl App {
         match message {
             Message::Confirm => match self.after_confirm {
                 Message::Shutdown => {
-                    println!("Shut");
+                    println!("shutdown -h now");
+                    let _ = Command::new("shutdown").args(["-h", "now"]).spawn();
+                    exit(0)
                 }
                 Message::Reboot => {
-                    println!("Reb");
+                    println!("reboot");
+                    let _ = Command::new("reboot").spawn();
+                    exit(0)
                 }
                 Message::LogOut => {
-                    println!("Logou");
+                    println!("hyprctl dispatch exit");
+                    let _ = Command::new("hyprctl").args(["dispatch", "exit"]).spawn();
+                    exit(0)
                 }
                 Message::Lock => {
-                    println!("lock");
+                    let _ = Command::new("hyprlock").spawn();
+                    exit(0)
                 }
                 _ => {}
             },
@@ -165,7 +161,6 @@ impl App {
             }
             _ => {
                 self.font_size = 24;
-                self.button_size = (42, 42);
                 self.show_confirm = true;
                 self.after_confirm = message;
             }
@@ -180,7 +175,7 @@ fn main() -> Result<(), iced::Error> {
                 size: Size::new(300f32, 95f32),
                 ..Default::default()
             },
-            default_font: Font::with_name("Hack Nerd Font"),
+            default_font: Font::with_name("Hack Nerd Font Mono"),
             default_text_size: Pixels::from(12),
             ..Default::default()
         })
